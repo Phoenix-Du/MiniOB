@@ -1,24 +1,60 @@
 
+/**
+ * @file yacc_sql.y
+ * @brief SQL语法解析器的Yacc/Bison定义文件
+ * 
+ * 该文件定义了SQL语句的语法规则，是SQL解析器的核心组件之一。
+ * 它与lex_sql.l配合使用，共同完成SQL语句的词法分析和语法分析。
+ * 
+ * @author MiniOB团队
+ * @date 2021年
+ * @version 1.0
+ */
+
 %{
+/**
+ * @brief Yacc/Bison的C代码部分
+ * 
+ * 这部分代码会被直接包含在生成的解析器文件中，用于定义辅助函数和包含必要的头文件。
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "common/log/log.h"
-#include "common/lang/string.h"
-#include "sql/parser/parse_defs.h"
-#include "sql/parser/yacc_sql.hpp"
-#include "sql/parser/lex_sql.h"
-#include "sql/expr/expression.h"
+#include "common/log/log.h"           // 日志系统
+#include "common/lang/string.h"       // 字符串处理工具
+#include "sql/parser/parse_defs.h"    // SQL解析相关定义
+#include "sql/parser/yacc_sql.hpp"    // Yacc生成的头文件
+#include "sql/parser/lex_sql.h"       // 词法分析器头文件
+#include "sql/expr/expression.h"      // 表达式相关定义
 
 using namespace std;
 
+/**
+ * @brief 根据位置信息获取SQL字符串中的令牌名称
+ * 
+ * @param sql_string 完整的SQL字符串
+ * @param llocp 位置信息，包含令牌的起始和结束位置
+ * @return string 令牌的字符串表示
+ */
 string token_name(const char *sql_string, YYLTYPE *llocp)
 {
   return string(sql_string + llocp->first_column, llocp->last_column - llocp->first_column + 1);
 }
 
+/**
+ * @brief 语法错误处理函数
+ * 
+ * 当解析过程中遇到语法错误时，该函数会被调用，生成错误信息并返回给调用者。
+ * 
+ * @param llocp 位置信息，错误发生的位置
+ * @param sql_string 完整的SQL字符串
+ * @param sql_result 解析结果，用于存储错误信息
+ * @param scanner 词法分析器的扫描器对象
+ * @param msg 错误消息
+ * @return int 总是返回0，表示错误已处理
+ */
 int yyerror(YYLTYPE *llocp, const char *sql_string, ParsedSqlResult *sql_result, yyscan_t scanner, const char *msg)
 {
   unique_ptr<ParsedSqlNode> error_sql_node = make_unique<ParsedSqlNode>(SCF_ERROR);
@@ -29,6 +65,16 @@ int yyerror(YYLTYPE *llocp, const char *sql_string, ParsedSqlResult *sql_result,
   return 0;
 }
 
+/**
+ * @brief 创建算术表达式
+ * 
+ * @param type 算术表达式类型（如加、减、乘、除等）
+ * @param left 左操作数表达式
+ * @param right 右操作数表达式
+ * @param sql_string 完整的SQL字符串
+ * @param llocp 位置信息
+ * @return ArithmeticExpr* 创建的算术表达式对象
+ */
 ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
                                              Expression *left,
                                              Expression *right,
@@ -40,6 +86,15 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   return expr;
 }
 
+/**
+ * @brief 创建聚合表达式
+ * 
+ * @param aggregate_name 聚合函数名称（如SUM、COUNT、AVG等）
+ * @param child 子表达式
+ * @param sql_string 完整的SQL字符串
+ * @param llocp 位置信息
+ * @return UnboundAggregateExpr* 创建的聚合表达式对象
+ */
 UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
                                            Expression *child,
                                            const char *sql_string,

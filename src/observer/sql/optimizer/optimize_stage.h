@@ -1,3 +1,15 @@
+/**
+ * @file optimize_stage.h
+ * @brief SQL优化阶段的核心头文件
+ * 
+ * 该文件定义了OptimizeStage类，负责将解析后的SQL语句转换为执行计划并进行优化。
+ * 优化过程包括逻辑计划生成、计划重写和物理计划生成三个主要步骤。
+ * 
+ * @author Longda
+ * @date 2021年4月13日
+ * @version 1.0
+ */
+
 /* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
 miniob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -8,74 +20,109 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by Longda on 2021/4/13.
-//
-
 #pragma once
 
-#include "common/sys/rc.h"
-#include "session/session.h"
-#include "sql/operator/logical_operator.h"
-#include "sql/operator/physical_operator.h"
-#include "sql/optimizer/logical_plan_generator.h"
-#include "sql/optimizer/physical_plan_generator.h"
-#include "sql/optimizer/rewriter.h"
+#include "common/sys/rc.h"                          // 状态码定义
+#include "session/session.h"                        // 会话定义
+#include "sql/operator/logical_operator.h"          // 逻辑操作符定义
+#include "sql/operator/physical_operator.h"         // 物理操作符定义
+#include "sql/optimizer/logical_plan_generator.h"   // 逻辑计划生成器
+#include "sql/optimizer/physical_plan_generator.h"  // 物理计划生成器
+#include "sql/optimizer/rewriter.h"                 // 计划重写器
 
-class SQLStageEvent;
-class LogicalOperator;
-class Stmt;
+class SQLStageEvent;    // 前向声明SQL阶段事件类
+class LogicalOperator;  // 前向声明逻辑操作符类
+class Stmt;             // 前向声明语句类
 
 /**
- * @brief 将解析后的Statement转换成执行计划，并进行优化
+ * @defgroup SQLStage SQL处理阶段
+ * @brief SQL语句的处理流程
+ * 
+ * SQL语句在数据库中的处理分为多个阶段，包括解析、优化和执行等。
+ * OptimizeStage是其中的优化阶段，负责将解析后的语句转换为可执行的物理计划。
+ */
+
+/**
+ * @brief SQL优化阶段类
  * @ingroup SQLStage
- * @details 优化分为两种，一个是根据规则重写，一个是根据代价模型优化。
- * 在这里，先将Statement转换成逻辑计划，然后进行重写(rewrite)，最后生成物理计划。
- * 不过并不是所有的语句都需要生成计划，有些可以直接执行，比如create table、create index等。
- * 这些语句可以参考 @class CommandExecutor。
+ * 
+ * OptimizeStage负责将解析后的SQL语句转换为执行计划并进行优化。
+ * 优化过程包括：
+ * 1. 将SQL语句转换为逻辑计划
+ * 2. 根据规则重写逻辑计划
+ * 3. 根据逻辑计划生成物理计划
+ * 
+ * 并不是所有的SQL语句都需要生成执行计划，比如DDL语句（CREATE TABLE、CREATE INDEX等）
+ * 可以直接通过CommandExecutor执行。
  */
 class OptimizeStage
 {
 public:
+  /**
+   * @brief 处理SQL请求，执行优化流程
+   * 
+   * 该方法是优化阶段的入口点，接收SQLStageEvent对象作为参数，
+   * 并执行完整的优化流程：逻辑计划生成、计划重写、物理计划生成。
+   * 
+   * @param event SQL阶段事件，包含解析后的SQL语句和执行上下文
+   * @return RC 返回状态码，SUCCESS表示优化成功，其他值表示优化失败
+   */
   RC handle_request(SQLStageEvent *event);
 
 private:
   /**
    * @brief 根据SQL生成逻辑计划
-   * @details
-   * 由于SQL语句种类比较多，并且SQL语句可能会有嵌套的情况，比如带有SQL子查询的语句，那就需要递归的创建逻辑计划。
-   * @param sql_event   包含SQL信息的事件
-   * @param logical_operator  生成的逻辑计划
+   * 
+   * 逻辑计划描述了SQL语句要做什么，比如从表中获取数据、过滤、投影等。
+   * 由于SQL语句可能包含嵌套结构（如子查询），因此需要递归生成逻辑计划。
+   * 
+   * @param sql_event SQL阶段事件，包含解析后的SQL语句信息
+   * @param logical_operator 输出参数，生成的逻辑计划
+   * @return RC 返回状态码，SUCCESS表示生成成功，其他值表示生成失败
    */
   RC create_logical_plan(SQLStageEvent *sql_event, unique_ptr<LogicalOperator> &logical_operator);
 
   /**
    * @brief 重写逻辑计划
-   * @details 根据各种规则，对逻辑计划进行重写，比如消除多余的比较(1!=0)等。
-   * 规则改写也是一个递归的过程。
-   * @param logical_operator 要改写的逻辑计划
+   * 
+   * 根据各种优化规则对逻辑计划进行重写，比如消除多余的比较（如1!=0）、
+   * 简化表达式等。计划重写是一个递归的过程，会处理逻辑计划树的每个节点。
+   * 
+   * @param logical_operator 要重写的逻辑计划
+   * @return RC 返回状态码，SUCCESS表示重写成功，其他值表示重写失败
    */
   RC rewrite(unique_ptr<LogicalOperator> &logical_operator);
 
   /**
    * @brief 优化逻辑计划
-   * @details 当前什么都没做。可以增加每个逻辑计划的代价模型，然后根据代价模型进行优化。
+   * 
+   * 当前该方法未实现具体功能。未来可以添加代价模型，根据代价选择最优的
+   * 逻辑计划。
+   * 
    * @param logical_operator 需要优化的逻辑计划
+   * @return RC 返回状态码，当前固定返回SUCCESS
    */
   RC optimize(unique_ptr<LogicalOperator> &logical_operator);
 
   /**
    * @brief 根据逻辑计划生成物理计划
-   * @details 生成的物理计划就可以直接让后面的执行器完全按照物理计划执行了。
-   * 物理计划与逻辑计划有些不同，逻辑计划描述要干什么，比如从某张表根据什么条件获取什么数据。
-   * 而物理计划描述怎么做，比如如何从某张表按照什么条件获取什么数据，是否使用索引，使用哪个索引等。
-   * @param physical_operator 生成的物理计划。通常是一个多叉树的形状，这里就拿着根节点就可以了。
+   * 
+   * 物理计划描述了如何执行SQL语句，比如如何从表中获取数据、是否使用索引、
+   * 使用哪种连接算法等。物理计划是一个多叉树结构，执行器会按照这个树结构
+   * 实际执行SQL语句。
+   * 
+   * @param logical_operator 输入的逻辑计划
+   * @param physical_operator 输出参数，生成的物理计划
+   * @param session 会话对象，包含执行上下文信息
+   * @return RC 返回状态码，SUCCESS表示生成成功，其他值表示生成失败
    */
   RC generate_physical_plan(
-      unique_ptr<LogicalOperator> &logical_operator, unique_ptr<PhysicalOperator> &physical_operator, Session *session);
+      unique_ptr<LogicalOperator> &logical_operator, 
+      unique_ptr<PhysicalOperator> &physical_operator, 
+      Session *session);
 
 private:
-  LogicalPlanGenerator  logical_plan_generator_;   ///< 根据SQL生成逻辑计划
-  PhysicalPlanGenerator physical_plan_generator_;  ///< 根据逻辑计划生成物理计划
-  Rewriter              rewriter_;                 ///< 逻辑计划改写
+  LogicalPlanGenerator  logical_plan_generator_;   ///< 逻辑计划生成器，负责将SQL转换为逻辑计划
+  PhysicalPlanGenerator physical_plan_generator_;  ///< 物理计划生成器，负责将逻辑计划转换为物理计划
+  Rewriter              rewriter_;                 ///< 计划重写器，负责根据规则重写逻辑计划
 };

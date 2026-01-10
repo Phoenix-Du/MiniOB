@@ -1,3 +1,15 @@
+/**
+ * @file server.cpp
+ * @brief 网络服务器的核心实现
+ * 
+ * 该文件定义了NetServer类，负责数据库服务器的网络通信部分，包括服务器的启动、连接处理、
+ * 客户端请求的接收和分发等功能。它是数据库服务器与客户端进行交互的主要接口。
+ * 
+ * @author Longda
+ * @date 2021年
+ * @version 1.0
+ */
+
 /* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
 miniob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -8,49 +20,60 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by Longda on 2021
-//
-
 #include "net/server.h"
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <poll.h>
+#include <arpa/inet.h>    // 网络地址转换函数
+#include <errno.h>        // 错误处理
+#include <fcntl.h>        // 文件控制操作
+#include <netinet/in.h>   // 网络地址结构
+#include <netinet/tcp.h>  // TCP协议相关
+#include <stdio.h>        // 标准输入输出
+#include <stdlib.h>       // 标准库函数
+#include <string.h>       // 字符串处理
+#include <sys/socket.h>   // 套接字API
+#include <sys/types.h>    // 系统数据类型
+#include <sys/un.h>       // UNIX域套接字
+#include <unistd.h>       // 系统调用
+#include <poll.h>         // I/O多路复用
 
-#include "common/ini_setting.h"
-#include "common/io/io.h"
-#include "common/lang/mutex.h"
-#include "common/log/log.h"
-#include "event/session_event.h"
-#include "session/session_stage.h"
-#include "net/communicator.h"
-#include "net/cli_communicator.h"
-#include "session/session.h"
-#include "net/thread_handler.h"
-#include "net/sql_task_handler.h"
+#include "common/ini_setting.h"       // 配置文件处理
+#include "common/io/io.h"            // I/O操作
+#include "common/lang/mutex.h"       // 互斥锁
+#include "common/log/log.h"          // 日志系统
+#include "event/session_event.h"     // 会话事件
+#include "session/session_stage.h"   // 会话阶段
+#include "net/communicator.h"        // 通信器
+#include "net/cli_communicator.h"    // 客户端通信器
+#include "session/session.h"         // 会话管理
+#include "net/thread_handler.h"      // 线程处理
+#include "net/sql_task_handler.h"    // SQL任务处理
 
 using namespace common;
 
+/**
+ * @brief ServerParam类的默认构造函数
+ * 
+ * 初始化服务器参数的默认值。
+ */
 ServerParam::ServerParam()
 {
-  listen_addr        = INADDR_ANY;
-  max_connection_num = MAX_CONNECTION_NUM_DEFAULT;
-  port               = PORT_DEFAULT;
+  listen_addr        = INADDR_ANY;           ///< 监听所有可用地址
+  max_connection_num = MAX_CONNECTION_NUM_DEFAULT;  ///< 默认最大连接数
+  port               = PORT_DEFAULT;         ///< 默认端口号
 }
 
+/**
+ * @brief NetServer类的构造函数
+ * 
+ * @param input_server_param 服务器参数
+ */
 NetServer::NetServer(const ServerParam &input_server_param) : Server(input_server_param) {}
 
+/**
+ * @brief NetServer类的析构函数
+ * 
+ * 确保服务器在销毁前正确关闭。
+ */
 NetServer::~NetServer()
 {
   if (started_) {
@@ -58,6 +81,12 @@ NetServer::~NetServer()
   }
 }
 
+/**
+ * @brief 设置文件描述符为非阻塞模式
+ * 
+ * @param fd 文件描述符
+ * @return int 0表示成功，-1表示失败
+ */
 int NetServer::set_non_block(int fd)
 {
   int flags = fcntl(fd, F_GETFL);

@@ -8,23 +8,19 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by Longda on 2021
-//
+#include "sql/operator/update_logical_operator.h"
+#include "common/log/log.h"
 
-#ifndef CTESTMD5_H_
-#define CTESTMD5_H_
-
-/*
- *
- */
-class Md5Test
+UpdateLogicalOperator::UpdateLogicalOperator(Table *table, const std::vector<std::string> &field_names, const std::vector<Value> &values)
+    : table_(table), field_names_(field_names), values_(values)
 {
-public:
-  Md5Test();
-  virtual ~Md5Test();
+}
 
-  void string();
-};
+UpdateLogicalOperator::~UpdateLogicalOperator()
+{
+}
 
-#endif /* CTESTMD5_H_ */
+LogicalOperatorType UpdateLogicalOperator::type() const
+{
+  return LogicalOperatorType::UPDATE;
+}

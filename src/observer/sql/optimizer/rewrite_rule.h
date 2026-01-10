@@ -21,26 +21,68 @@ class LogicalOperator;
 class Expression;
 
 /**
- * @brief 逻辑计划的重写规则
- * @ingroup Rewriter
- * TODO: 重构下当前的查询改写规则，放到 cascade optimizer 中。
+ * @brief 查询重写规则基类
+ * @file rewrite_rule.h
+ * @ingroup Optimizer
+ * 
+ * 该文件定义了两种重写规则的基类：
+ * 1. RewriteRule：用于重写整个逻辑执行计划
+ * 2. ExpressionRewriteRule：用于重写表达式
+ * 
+ * 这些规则是优化器的重要组成部分，用于在生成物理计划之前对逻辑计划或表达式进行转换，
+ * 以提高查询执行效率。
+ * 
+ * @todo 重构当前的查询改写规则，将其整合到级联优化器（cascade optimizer）中。
+ */
+
+/**
+ * @brief 逻辑计划重写规则基类
+ * @ingroup Optimizer
+ * 
+ * RewriteRule是所有逻辑计划重写规则的抽象基类。它定义了一个统一的接口，
+ * 用于对逻辑执行计划进行重写操作。每个具体的重写规则都需要继承这个类并实现
+ * rewrite方法。
  */
 class RewriteRule
 {
 public:
+  /**
+   * @brief 虚析构函数
+   */
   virtual ~RewriteRule() = default;
 
+  /**
+   * @brief 重写逻辑执行计划
+   * 
+   * @param oper 要重写的逻辑操作符
+   * @param change_made 输出参数，表示是否对逻辑计划进行了修改
+   * @return RC 返回状态码，SUCCESS表示重写成功，其他值表示重写失败
+   */
   virtual RC rewrite(unique_ptr<LogicalOperator> &oper, bool &change_made) = 0;
 };
 
 /**
- * @brief 表达式的重写规则
- * @ingroup Rewriter
+ * @brief 表达式重写规则基类
+ * @ingroup Optimizer
+ * 
+ * ExpressionRewriteRule是所有表达式重写规则的抽象基类。它定义了一个统一的接口，
+ * 用于对表达式进行重写操作。每个具体的表达式重写规则都需要继承这个类并实现
+ * rewrite方法。
  */
 class ExpressionRewriteRule
 {
 public:
+  /**
+   * @brief 虚析构函数
+   */
   virtual ~ExpressionRewriteRule() = default;
 
+  /**
+   * @brief 重写表达式
+   * 
+   * @param expr 要重写的表达式
+   * @param change_made 输出参数，表示是否对表达式进行了修改
+   * @return RC 返回状态码，SUCCESS表示重写成功，其他值表示重写失败
+   */
   virtual RC rewrite(unique_ptr<Expression> &expr, bool &change_made) = 0;
 };

@@ -1,25 +1,18 @@
 #!/bin/bash
-
 # readlink -f cannot work on mac
 TOPDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
 BUILD_SH=$TOPDIR/build.sh
 echo "THIRD_PARTY_INSTALL_PREFIX is ${THIRD_PARTY_INSTALL_PREFIX:=$TOPDIR/deps/3rd/usr/local}"
-
 CMAKE_COMMAND="cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 --log-level=STATUS"
 CMAKE_COMMAND_THIRD_PARTY="$CMAKE_COMMAND -DCMAKE_INSTALL_PREFIX=$THIRD_PARTY_INSTALL_PREFIX"
 CMAKE_COMMAND_MINIOB="$CMAKE_COMMAND"
-
 ALL_ARGS=("$@")
 BUILD_ARGS=()
 MAKE_ARGS=()
 MAKE=make
-
 echo "$0 ${ALL_ARGS[@]}"
-
 function usage
-{
-  echo "Usage:"
+{ echo "Usage:"
   echo "./build.sh -h"
   echo "./build.sh init # install dependence"
   echo "./build.sh clean"
@@ -39,8 +32,7 @@ function usage
 }
 
 function parse_args
-{
-  make_start=false
+{ make_start=false
   for arg in "${ALL_ARGS[@]}"; do
     if [[ "$arg" == "--make" ]]
     then

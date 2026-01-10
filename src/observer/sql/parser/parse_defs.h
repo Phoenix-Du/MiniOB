@@ -1,3 +1,15 @@
+/**
+ * @file parse_defs.h
+ * @brief SQL解析器的核心数据结构定义
+ * 
+ * 该文件定义了SQL解析过程中使用的所有核心数据结构，包括各种SQL语句的表示形式、
+ * 条件表达式、属性定义等。这些数据结构是SQL解析器和执行器之间的桥梁。
+ * 
+ * @author Meiyi
+ * @date 2021年
+ * @version 1.0
+ */
+
 /* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
 miniob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -8,19 +20,23 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by Meiyi
-//
-
 #pragma once
 
-#include "common/lang/string.h"
-#include "common/lang/vector.h"
-#include "common/lang/memory.h"
-#include "common/value.h"
-#include "common/lang/utility.h"
+#include "common/lang/string.h"      // 字符串处理
+#include "common/lang/vector.h"      // 向量容器
+#include "common/lang/memory.h"      // 内存管理
+#include "common/value.h"            // 值类型定义
+#include "common/lang/utility.h"     // 工具函数
 
-class Expression;
+class Expression;  // 前向声明表达式类
+
+/**
+ * @defgroup SQLParser SQL Parser
+ * @brief SQL解析器相关的数据结构和接口
+ * 
+ * 这个模块定义了SQL解析过程中使用的所有数据结构和接口，包括SQL语句的表示、
+ * 条件表达式、属性定义等。
+ */
 
 /**
  * @defgroup SQLParser SQL Parser
